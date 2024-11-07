@@ -69,6 +69,8 @@ void SCustomRoundedBox::DrawOutline(FSlateWindowElementList& OutDrawElements,
     FSlateBrush OutlineBrush;
     OutlineBrush.DrawAs = ESlateBrushDrawType::Box;
     
+    // Отрисовка прямых участков обводки
+    
     // Top border
     if (Brush.GetTopBorderWidth() > 0)
     {
@@ -92,10 +94,6 @@ void SCustomRoundedBox::DrawOutline(FSlateWindowElementList& OutDrawElements,
                 Brush.OutlineColor
             );
         }
-        
-        // Draw top corners
-        DrawCornerOutline(OutDrawElements, AllottedGeometry, LayerId, ESide::Top, false);
-        DrawCornerOutline(OutDrawElements, AllottedGeometry, LayerId, ESide::Top, true);
     }
 
     // Right border
@@ -121,10 +119,6 @@ void SCustomRoundedBox::DrawOutline(FSlateWindowElementList& OutDrawElements,
                 Brush.OutlineColor
             );
         }
-
-        // Draw right corners
-        DrawCornerOutline(OutDrawElements, AllottedGeometry, LayerId, ESide::Right, false);
-        DrawCornerOutline(OutDrawElements, AllottedGeometry, LayerId, ESide::Right, true);
     }
 
     // Bottom border
@@ -150,10 +144,6 @@ void SCustomRoundedBox::DrawOutline(FSlateWindowElementList& OutDrawElements,
                 Brush.OutlineColor
             );
         }
-
-        // Draw bottom corners
-        DrawCornerOutline(OutDrawElements, AllottedGeometry, LayerId, ESide::Bottom, false);
-        DrawCornerOutline(OutDrawElements, AllottedGeometry, LayerId, ESide::Bottom, true);
     }
 
     // Left border
@@ -179,11 +169,20 @@ void SCustomRoundedBox::DrawOutline(FSlateWindowElementList& OutDrawElements,
                 Brush.OutlineColor
             );
         }
-
-        // Draw left corners
-        DrawCornerOutline(OutDrawElements, AllottedGeometry, LayerId, ESide::Left, false);
-        DrawCornerOutline(OutDrawElements, AllottedGeometry, LayerId, ESide::Left, true);
     }
+
+    // Отрисовка угловых элементов (по одному на каждый угол)
+    // Верхний левый угол
+    DrawCornerOutline(OutDrawElements, AllottedGeometry, LayerId, ESide::Top, false);
+    
+    // Верхний правый угол
+    DrawCornerOutline(OutDrawElements, AllottedGeometry, LayerId, ESide::Top, true);
+    
+    // Нижний правый угол
+    DrawCornerOutline(OutDrawElements, AllottedGeometry, LayerId, ESide::Bottom, true);
+    
+    // Нижний левый угол
+    DrawCornerOutline(OutDrawElements, AllottedGeometry, LayerId, ESide::Bottom, false);
 }
 
 void SCustomRoundedBox::DrawCornerOutline(
@@ -229,7 +228,8 @@ void SCustomRoundedBox::DrawCornerOutline(
             BorderWidth,
             Brush.OutlineColor,
             bIsRightCorner,
-            Side
+            Side,
+            Brush
         );
         
         Corner.DrawRoundedCorner(

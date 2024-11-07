@@ -9,12 +9,14 @@ FRoundedCornerElement::FRoundedCornerElement(
     float InBorderWidth,
     const FLinearColor& InOutlineColor,
     bool bIsRightCorner,
-    ESide InSide)
+    ESide InSide,
+    const FCustomRoundedBoxBrush& InBrush)
     : CornerRadius(InCornerRadius)
     , BorderWidth(InBorderWidth)
     , OutlineColor(InOutlineColor)
     , bRightCorner(bIsRightCorner)
     , Side(InSide)
+    , Brush(InBrush)
 {
 }
 
@@ -24,7 +26,32 @@ void FRoundedCornerElement::DrawRoundedCorner(
     FSlateWindowElementList& OutDrawElements,
     int32 LayerId) const
 {
-    if (CornerRadius <= 0.0f || BorderWidth <= 0.0f)
+    // Определяем толщины граничащих граней
+    float HorizontalBorderWidth = 0.0f;
+    float VerticalBorderWidth = 0.0f;
+
+    switch (Side)
+    {
+    case ESide::Top:
+        HorizontalBorderWidth = Brush.GetTopBorderWidth();
+        VerticalBorderWidth = bRightCorner ? Brush.GetRightBorderWidth() : Brush.GetLeftBorderWidth();
+        break;
+    case ESide::Right:
+        HorizontalBorderWidth = bRightCorner ? Brush.GetBottomBorderWidth() : Brush.GetTopBorderWidth();
+        VerticalBorderWidth = Brush.GetRightBorderWidth();
+        break;
+    case ESide::Bottom:
+        HorizontalBorderWidth = Brush.GetBottomBorderWidth();
+        VerticalBorderWidth = bRightCorner ? Brush.GetRightBorderWidth() : Brush.GetLeftBorderWidth();
+        break;
+    case ESide::Left:
+        HorizontalBorderWidth = bRightCorner ? Brush.GetBottomBorderWidth() : Brush.GetTopBorderWidth();
+        VerticalBorderWidth = Brush.GetLeftBorderWidth();
+        break;
+    }
+
+    // Пропускаем отрисовку, если обе граничащие грани имеют нулевую толщину
+    if (HorizontalBorderWidth == 0.0f && VerticalBorderWidth == 0.0f)
     {
         return;
     }
@@ -37,80 +64,35 @@ void FRoundedCornerElement::DrawRoundedCorner(
     
     const FVector2D LocalSize = AllottedGeometry.GetLocalSize();
     
-    // Определяем параметры для каждой стороны
+    // Определяем позиции и углы для каждого угла
     FVector2D Center;
     float StartAngle = 0.0f;
-    bool bReverseThickness = false;
 
-    // Определяем позиции и углы для каждого угла
     switch (Side)
     {
     case ESide::Top:
-        if (bRightCorner)
-        {
-            // Верхний правый угол (1-я четверть)
-            Center = FVector2D(LocalSize.X - CornerRadius, CornerRadius);
-            StartAngle = -PI/2.0f;
-            bReverseThickness = true;
-        }
-        else
-        {
-            // Верхний левый угол (1-я четверть)
-            Center = FVector2D(CornerRadius, CornerRadius);
-            StartAngle = -PI/2.0f;
-            bReverseThickness = true;
-        }
+        Center = bRightCorner ? 
+            FVector2D(LocalSize.X - CornerRadius, CornerRadius) : 
+            FVector2D(CornerRadius, CornerRadius);
+        StartAngle = -PI/2.0f;
         break;
-
     case ESide::Right:
-        if (bRightCorner)
-        {
-            // Нижний правый угол (2-я четверть)
-            Center = FVector2D(LocalSize.X - CornerRadius, LocalSize.Y - CornerRadius);
-            StartAngle = 0.0f;
-            bReverseThickness = true;
-        }
-        else
-        {
-            // Верхний правый угол (2-я четверть)
-            Center = FVector2D(LocalSize.X - CornerRadius, CornerRadius);
-            StartAngle = 0.0f;
-            bReverseThickness = true;
-        }
+        Center = bRightCorner ? 
+            FVector2D(LocalSize.X - CornerRadius, LocalSize.Y - CornerRadius) : 
+            FVector2D(LocalSize.X - CornerRadius, CornerRadius);
+        StartAngle = bRightCorner ? 0.0f : 0.0f;
         break;
-
     case ESide::Bottom:
-        if (bRightCorner)
-        {
-            // Нижний правый угол (2-я четверть)
-            Center = FVector2D(LocalSize.X - CornerRadius, LocalSize.Y - CornerRadius);
-            StartAngle = 0.0f;
-            bReverseThickness = false;
-        }
-        else
-        {
-            // Нижний левый угол (4-я четверть)
-            Center = FVector2D(CornerRadius, LocalSize.Y - CornerRadius);
-            StartAngle = PI;
-            bReverseThickness = false;
-        }
+        Center = bRightCorner ? 
+            FVector2D(LocalSize.X - CornerRadius, LocalSize.Y - CornerRadius) : 
+            FVector2D(CornerRadius, LocalSize.Y - CornerRadius);
+        StartAngle = bRightCorner ? 0.0f : PI;
         break;
-
     case ESide::Left:
-        if (bRightCorner)
-        {
-            // Нижний левый угол (меняем на 3-ю четверть)
-            Center = FVector2D(CornerRadius, LocalSize.Y - CornerRadius);
-            StartAngle = PI/2.0f;  // Угол для 3-й четверти
-            bReverseThickness = false;
-        }
-        else
-        {
-            // Верхний левый угол (1-я четверть)
-            Center = FVector2D(CornerRadius, CornerRadius);
-            StartAngle = -PI/2.0f;
-            bReverseThickness = false;
-        }
+        Center = bRightCorner ? 
+            FVector2D(CornerRadius, LocalSize.Y - CornerRadius) : 
+            FVector2D(CornerRadius, CornerRadius);
+        StartAngle = bRightCorner ? PI/2.0f : -PI/2.0f;
         break;
     }
 
@@ -125,27 +107,19 @@ void FRoundedCornerElement::DrawRoundedCorner(
         const float CosAngle = FMath::Cos(Angle);
         const float SinAngle = FMath::Sin(Angle);
 
-        // Вычисляем коэффициент уменьшения толщины
-        const float ThicknessScale = bReverseThickness ? 
-            FMath::Sin((NumSegments - i) * AngleStep) : 
-            FMath::Sin(i * AngleStep);
-        
-        // Вычисляем текущую толщину обводки
-        const float CurrentBorderWidth = BorderWidth * ThicknessScale;
-        
-        // Вычисляем радиусы с учетом текущей толщины
-        const float OuterRadius = CornerRadius;
-        const float InnerRadius = CornerRadius - CurrentBorderWidth;
-        
-        // Вычисляем позиции в локальных координатах
+        // Внешняя граница совпадает с скруглением основного бокса
         const FVector2D OuterPos(
-            Center.X + OuterRadius * CosAngle,
-            Center.Y + OuterRadius * SinAngle
+            Center.X + CornerRadius * CosAngle,
+            Center.Y + CornerRadius * SinAngle
         );
+
+        // Внутренняя граница - эллиптическая
+        const float InnerRadiusX = CornerRadius - VerticalBorderWidth;
+        const float InnerRadiusY = CornerRadius - HorizontalBorderWidth;
         
         const FVector2D InnerPos(
-            Center.X + InnerRadius * CosAngle,
-            Center.Y + InnerRadius * SinAngle
+            Center.X + InnerRadiusX * CosAngle,
+            Center.Y + InnerRadiusY * SinAngle
         );
 
         // Применяем трансформацию

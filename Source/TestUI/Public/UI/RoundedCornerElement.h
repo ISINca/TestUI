@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Rendering/DrawElements.h"
 #include "Framework/Application/SlateApplication.h"
+#include "UI/CustomRoundedBoxBrush.h"
 
 enum class ESide
 {
@@ -21,7 +22,8 @@ public:
         float InBorderWidth,
         const FLinearColor& InOutlineColor,
         bool bIsRightCorner,
-        ESide InSide
+        ESide InSide,
+        const FCustomRoundedBoxBrush& InBrush
     );
 
     void DrawRoundedCorner(
@@ -36,4 +38,5 @@ private:
     FLinearColor OutlineColor;
     bool bRightCorner;
     ESide Side;
+    const FCustomRoundedBoxBrush& Brush;
 }; 
