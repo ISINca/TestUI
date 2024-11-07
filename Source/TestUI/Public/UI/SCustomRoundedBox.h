@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Widgets/SCompoundWidget.h"
 #include "UI/CustomRoundedBoxBrush.h"
+#include "UI/RoundedCornerElement.h"
 
 class TESTUI_API SCustomRoundedBox : public SCompoundWidget
 {
@@ -37,4 +38,12 @@ private:
         
     void DrawOutline(FSlateWindowElementList& OutDrawElements, const FGeometry& AllottedGeometry,
         int32 LayerId) const;
+
+    // Методы для отрисовки рогов на каждой стороне
+    void DrawCornerOutline(
+        FSlateWindowElementList& OutDrawElements,
+        const FGeometry& AllottedGeometry,
+        int32 LayerId,
+        ESide Side,
+        bool bIsEndCorner) const;
 }; 

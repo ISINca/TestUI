@@ -3,8 +3,7 @@
 
 UCustomRoundedBoxWidget::UCustomRoundedBoxWidget()
 {
-    // Устанавливаем базовые параметры виджета
-    Visibility = ESlateVisibility::Visible;
+    SetVisibility(ESlateVisibility::Visible);
     bIsVariable = false;
 }
 
