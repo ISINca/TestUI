@@ -114,13 +114,53 @@ void FRoundedCornerElement::DrawRoundedCorner(
         );
 
         // Внутренняя граница - эллиптическая
-        const float InnerRadiusX = CornerRadius - VerticalBorderWidth;
-        const float InnerRadiusY = CornerRadius - HorizontalBorderWidth;
-        
-        const FVector2D InnerPos(
-            Center.X + InnerRadiusX * CosAngle,
-            Center.Y + InnerRadiusY * SinAngle
-        );
+        float InnerRadiusX = CornerRadius - VerticalBorderWidth;
+        float InnerRadiusY = CornerRadius - HorizontalBorderWidth;
+
+        FVector2D InnerPos;
+        if (VerticalBorderWidth > CornerRadius)
+        {
+            float XOffset = InnerRadiusX;
+            switch (Side)
+            {
+            case ESide::Left:
+                XOffset = -InnerRadiusX;
+                break;
+            case ESide::Right:
+                XOffset = InnerRadiusX;
+                break;
+            case ESide::Top:
+            case ESide::Bottom:
+                XOffset = bRightCorner ? InnerRadiusX : -InnerRadiusX;
+                break;
+            }
+            InnerPos = FVector2D(Center.X + XOffset, Center.Y);
+        }
+        else if (HorizontalBorderWidth > CornerRadius)
+        {
+            float YOffset = InnerRadiusY;
+            switch (Side)
+            {
+            case ESide::Top:
+                YOffset = -InnerRadiusY;
+                break;
+            case ESide::Bottom:
+                YOffset = InnerRadiusY;
+                break;
+            case ESide::Left:
+            case ESide::Right:
+                YOffset = bRightCorner ? InnerRadiusY : -InnerRadiusY;
+                break;
+            }
+            InnerPos = FVector2D(Center.X, Center.Y + YOffset);
+        }
+        else
+        {
+            InnerPos = FVector2D(
+                Center.X + InnerRadiusX * CosAngle,
+                Center.Y + InnerRadiusY * SinAngle
+            );
+        }
 
         // Применяем трансформацию
         const FVector2D TransformedOuterPos = RenderTransform.TransformPoint(OuterPos);
