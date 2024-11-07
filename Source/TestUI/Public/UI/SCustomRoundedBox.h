@@ -25,12 +25,15 @@ public:
     // Метод для обновления кисти
     void SetBrush(const FCustomRoundedBoxBrush& InBrush);
 
+    // Метод для установки содержимого
+    void SetContent(const TSharedRef<SWidget>& InContent);
+
 private:
     FCustomRoundedBoxBrush Brush;
     
     // Вспомогательные методы для отрисовки
     void DrawRoundedBox(FSlateWindowElementList& OutDrawElements, const FGeometry& AllottedGeometry,
-        const FLinearColor& Color, float Opacity, int32 LayerId) const;
+        int32 LayerId) const;
         
     void DrawOutline(FSlateWindowElementList& OutDrawElements, const FGeometry& AllottedGeometry,
         int32 LayerId) const;

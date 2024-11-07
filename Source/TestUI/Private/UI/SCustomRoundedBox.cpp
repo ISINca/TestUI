@@ -14,13 +14,20 @@ void SCustomRoundedBox::Construct(const FArguments& InArgs)
     ];
 }
 
+void SCustomRoundedBox::SetContent(const TSharedRef<SWidget>& InContent)
+{
+    ChildSlot
+    [
+        InContent
+    ];
+}
+
 int32 SCustomRoundedBox::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry,
     const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements,
     int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const
 {
     // Отрисовка основного фона
-    DrawRoundedBox(OutDrawElements, AllottedGeometry, Brush.TintColor.GetSpecifiedColor(), 
-        Brush.GetResourceObject() ? Brush.GetResourceObject()->GetResourceOpacity() : 1.0f, LayerId);
+    DrawRoundedBox(OutDrawElements, AllottedGeometry, LayerId);
 
     // Отрисовка обводки, если она включена
     if (Brush.bUseOutline)
@@ -39,42 +46,18 @@ void SCustomRoundedBox::SetBrush(const FCustomRoundedBoxBrush& InBrush)
 }
 
 void SCustomRoundedBox::DrawRoundedBox(FSlateWindowElementList& OutDrawElements, 
-    const FGeometry& AllottedGeometry, const FLinearColor& Color, float Opacity, int32 LayerId) const
+    const FGeometry& AllottedGeometry, int32 LayerId) const
 {
     const FVector2D LocalSize = AllottedGeometry.GetLocalSize();
     
-    // Создаем геометрию для каждого угла с учетом разных радиусов
-    TArray<FSlateVertex> Vertices;
-    TArray<SlateIndex> Indices;
-
-    // Добавляем вершины для основного прямоугольника
-    Vertices.SetNum(4);
-    Vertices[0].Position = FVector2f(0, 0);
-    Vertices[1].Position = FVector2f(LocalSize.X, 0);
-    Vertices[2].Position = FVector2f(LocalSize.X, LocalSize.Y);
-    Vertices[3].Position = FVector2f(0, LocalSize.Y);
-
-    // Добавляем индексы для треугольников
-    Indices.SetNum(6);
-    Indices[0] = 0;
-    Indices[1] = 1;
-    Indices[2] = 2;
-    Indices[3] = 2;
-    Indices[4] = 3;
-    Indices[5] = 0;
-
-    // Создаем элемент отрисовки
-    FSlateDrawElement::MakeCustom(
+    // Create box geometry
+    FSlateDrawElement::MakeBox(
         OutDrawElements,
         LayerId,
-        FPaintGeometry(
-            AllottedGeometry.ToPaintGeometry()
-        ),
-        FSlateVertex(Vertices),
-        Indices,
-        nullptr,
-        0,
-        0
+        AllottedGeometry.ToPaintGeometry(),
+        &Brush,
+        ESlateDrawEffect::None,
+        Brush.TintColor.GetSpecifiedColor()
     );
 }
 
@@ -83,55 +66,96 @@ void SCustomRoundedBox::DrawOutline(FSlateWindowElementList& OutDrawElements,
 {
     const FVector2D LocalSize = AllottedGeometry.GetLocalSize();
     
-    // Получаем толщины линий для каждой стороны
-    const float TopWidth = Brush.bUseUniformOutlineWidth ? Brush.OutlineWidth : Brush.OutlineWidths.X;
-    const float RightWidth = Brush.bUseUniformOutlineWidth ? Brush.OutlineWidth : Brush.OutlineWidths.Y;
-    const float BottomWidth = Brush.bUseUniformOutlineWidth ? Brush.OutlineWidth : Brush.OutlineWidths.Z;
-    const float LeftWidth = Brush.bUseUniformOutlineWidth ? Brush.OutlineWidth : Brush.OutlineWidths.W;
+    FSlateBrush OutlineBrush;
+    OutlineBrush.DrawAs = ESlateBrushDrawType::Box;
+    
+    // Top border
+    if (Brush.GetTopBorderWidth() > 0)
+    {
+        const float StartX = Brush.OutlineSettings.CornerRadii.X; // TopLeft
+        const float EndX = LocalSize.X - Brush.OutlineSettings.CornerRadii.Y; // TopRight
+        
+        if (EndX > StartX)
+        {
+            FSlateDrawElement::MakeBox(
+                OutDrawElements,
+                LayerId,
+                AllottedGeometry.ToPaintGeometry(
+                    FVector2D(StartX, 0),
+                    FVector2D(EndX - StartX, Brush.GetTopBorderWidth())
+                ),
+                &OutlineBrush,
+                ESlateDrawEffect::None,
+                Brush.OutlineColor
+            );
+        }
+    }
 
-    // Отрисовка линий обводки
-    // Верхняя линия
-    FSlateDrawElement::MakeBox(
-        OutDrawElements,
-        LayerId,
-        AllottedGeometry.ToPaintGeometry(FVector2D(0, 0), FVector2D(LocalSize.X, TopWidth)),
-        &Brush,
-        ESlateDrawEffect::None,
-        Brush.OutlineColor
-    );
+    // Right border
+    if (Brush.GetRightBorderWidth() > 0)
+    {
+        const float StartY = Brush.OutlineSettings.CornerRadii.Y; // TopRight
+        const float EndY = LocalSize.Y - Brush.OutlineSettings.CornerRadii.Z; // BottomRight
+        
+        if (EndY > StartY)
+        {
+            FSlateDrawElement::MakeBox(
+                OutDrawElements,
+                LayerId,
+                AllottedGeometry.ToPaintGeometry(
+                    FVector2D(LocalSize.X - Brush.GetRightBorderWidth(), StartY),
+                    FVector2D(Brush.GetRightBorderWidth(), EndY - StartY)
+                ),
+                &OutlineBrush,
+                ESlateDrawEffect::None,
+                Brush.OutlineColor
+            );
+        }
+    }
 
-    // Правая линия
-    FSlateDrawElement::MakeBox(
-        OutDrawElements,
-        LayerId,
-        AllottedGeometry.ToPaintGeometry(FVector2D(LocalSize.X - RightWidth, TopWidth), 
-            FVector2D(RightWidth, LocalSize.Y - TopWidth - BottomWidth)),
-        &Brush,
-        ESlateDrawEffect::None,
-        Brush.OutlineColor
-    );
+    // Bottom border
+    if (Brush.GetBottomBorderWidth() > 0)
+    {
+        const float StartX = Brush.OutlineSettings.CornerRadii.W; // BottomLeft
+        const float EndX = LocalSize.X - Brush.OutlineSettings.CornerRadii.Z; // BottomRight
+        
+        if (EndX > StartX)
+        {
+            FSlateDrawElement::MakeBox(
+                OutDrawElements,
+                LayerId,
+                AllottedGeometry.ToPaintGeometry(
+                    FVector2D(StartX, LocalSize.Y - Brush.GetBottomBorderWidth()),
+                    FVector2D(EndX - StartX, Brush.GetBottomBorderWidth())
+                ),
+                &OutlineBrush,
+                ESlateDrawEffect::None,
+                Brush.OutlineColor
+            );
+        }
+    }
 
-    // Нижняя линия
-    FSlateDrawElement::MakeBox(
-        OutDrawElements,
-        LayerId,
-        AllottedGeometry.ToPaintGeometry(FVector2D(0, LocalSize.Y - BottomWidth), 
-            FVector2D(LocalSize.X, BottomWidth)),
-        &Brush,
-        ESlateDrawEffect::None,
-        Brush.OutlineColor
-    );
-
-    // Левая линия
-    FSlateDrawElement::MakeBox(
-        OutDrawElements,
-        LayerId,
-        AllottedGeometry.ToPaintGeometry(FVector2D(0, TopWidth), 
-            FVector2D(LeftWidth, LocalSize.Y - TopWidth - BottomWidth)),
-        &Brush,
-        ESlateDrawEffect::None,
-        Brush.OutlineColor
-    );
+    // Left border
+    if (Brush.GetLeftBorderWidth() > 0)
+    {
+        const float StartY = Brush.OutlineSettings.CornerRadii.X; // TopLeft
+        const float EndY = LocalSize.Y - Brush.OutlineSettings.CornerRadii.W; // BottomLeft
+        
+        if (EndY > StartY)
+        {
+            FSlateDrawElement::MakeBox(
+                OutDrawElements,
+                LayerId,
+                AllottedGeometry.ToPaintGeometry(
+                    FVector2D(0, StartY),
+                    FVector2D(Brush.GetLeftBorderWidth(), EndY - StartY)
+                ),
+                &OutlineBrush,
+                ESlateDrawEffect::None,
+                Brush.OutlineColor
+            );
+        }
+    }
 }
 
 END_SLATE_FUNCTION_BUILD_OPTIMIZATION 

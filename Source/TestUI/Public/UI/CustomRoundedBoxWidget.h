@@ -16,14 +16,18 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance")
     FCustomRoundedBoxBrush Brush;
 
+    /** Устанавливает новый брашинг */
+    UFUNCTION(BlueprintCallable, Category="Appearance")
+    void SetBrush(const FCustomRoundedBoxBrush& InBrush);
+
 protected:
     virtual TSharedRef<SWidget> RebuildWidget() override;
-    
-    // Создаем Slate виджет
     virtual void ReleaseSlateResources(bool bReleaseChildren) override;
-    
-    // Обновляем свойства при их изменении
     virtual void SynchronizeProperties() override;
+
+#if WITH_EDITOR
+    virtual const FText GetPaletteCategory() override;
+#endif
 
 private:
     TSharedPtr<class SCustomRoundedBox> MyRoundedBox;

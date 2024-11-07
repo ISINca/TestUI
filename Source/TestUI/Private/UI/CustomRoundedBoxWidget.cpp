@@ -3,7 +3,15 @@
 
 UCustomRoundedBoxWidget::UCustomRoundedBoxWidget()
 {
-    // Инициализация базовых свойств виджета
+    // Устанавливаем базовые параметры виджета
+    Visibility = ESlateVisibility::Visible;
+    bIsVariable = false;
+}
+
+void UCustomRoundedBoxWidget::ReleaseSlateResources(bool bReleaseChildren)
+{
+    Super::ReleaseSlateResources(bReleaseChildren);
+    MyRoundedBox.Reset();
 }
 
 TSharedRef<SWidget> UCustomRoundedBoxWidget::RebuildWidget()
@@ -19,12 +27,6 @@ TSharedRef<SWidget> UCustomRoundedBoxWidget::RebuildWidget()
     return MyRoundedBox.ToSharedRef();
 }
 
-void UCustomRoundedBoxWidget::ReleaseSlateResources(bool bReleaseChildren)
-{
-    Super::ReleaseSlateResources(bReleaseChildren);
-    MyRoundedBox.Reset();
-}
-
 void UCustomRoundedBoxWidget::SynchronizeProperties()
 {
     Super::SynchronizeProperties();
@@ -33,4 +35,20 @@ void UCustomRoundedBoxWidget::SynchronizeProperties()
     {
         MyRoundedBox->SetBrush(Brush);
     }
-} 
+}
+
+void UCustomRoundedBoxWidget::SetBrush(const FCustomRoundedBoxBrush& InBrush)
+{
+    Brush = InBrush;
+    if (MyRoundedBox.IsValid())
+    {
+        MyRoundedBox->SetBrush(Brush);
+    }
+}
+
+#if WITH_EDITOR
+const FText UCustomRoundedBoxWidget::GetPaletteCategory()
+{
+    return NSLOCTEXT("UI", "Custom", "Custom");
+}
+#endif 
