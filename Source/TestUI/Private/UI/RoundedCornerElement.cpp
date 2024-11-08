@@ -107,11 +107,54 @@ void FRoundedCornerElement::DrawRoundedCorner(
         const float CosAngle = FMath::Cos(Angle);
         const float SinAngle = FMath::Sin(Angle);
 
-        // Внешняя граница совпадает с скруглением основного бокса
-        const FVector2D OuterPos(
+        // Внешняя граница - сначала вычисляем базовую позицию
+        FVector2D OuterPos(
             Center.X + CornerRadius * CosAngle,
             Center.Y + CornerRadius * SinAngle
         );
+
+        // Если нужно, корректируем только одну координату
+        if (VerticalBorderWidth > CornerRadius && (i == 0 || i == NumSegments))
+        {
+            switch (Side)
+            {
+            case ESide::Left:
+                if (i == 0)
+                    OuterPos.X = VerticalBorderWidth;
+                break;
+            case ESide::Right:
+                if (i == NumSegments)
+                    OuterPos.X = LocalSize.X - VerticalBorderWidth;
+                break;
+            case ESide::Top:
+                if ((bRightCorner && i == 0) || (!bRightCorner && i == 0)) // Для верха оставляем как было
+                    OuterPos.X = bRightCorner ? LocalSize.X - VerticalBorderWidth : VerticalBorderWidth;
+                break;
+            case ESide::Bottom:
+                if ((bRightCorner && i == NumSegments) || (!bRightCorner && i == NumSegments)) // Для низа меняем на последнюю вершину
+                    OuterPos.X = bRightCorner ? LocalSize.X - VerticalBorderWidth : VerticalBorderWidth;
+                break;
+            }
+        }
+        else if (HorizontalBorderWidth > CornerRadius && (i == 0 || i == NumSegments))
+        {
+            switch (Side)
+            {
+            case ESide::Top:
+                if (i == NumSegments) // Меняем на последнюю вершину
+                    OuterPos.Y = HorizontalBorderWidth;
+                break;
+            case ESide::Bottom:
+                if (i == 0) // Меняем на первую вершину
+                    OuterPos.Y = LocalSize.Y - HorizontalBorderWidth;
+                break;
+            case ESide::Left:
+            case ESide::Right:
+                if ((bRightCorner && i == 0) || (!bRightCorner && i == NumSegments))
+                    OuterPos.Y = bRightCorner ? LocalSize.Y - HorizontalBorderWidth : HorizontalBorderWidth;
+                break;
+            }
+        }
 
         // Внутренняя граница - эллиптическая
         float InnerRadiusX = CornerRadius - VerticalBorderWidth;
@@ -211,4 +254,24 @@ void FRoundedCornerElement::DrawRoundedCorner(
         0,
         ESlateDrawEffect::None
     );
+
+    // Отрисовка дебаг-точек для каждой вершины
+    for (int32 i = 0; i < Vertices.Num(); ++i)
+    {
+        const FVector2D VertexPos = FVector2D(Vertices[i].Position);
+        const FVector2D DebugPointSize(4.0f, 4.0f);  // Увеличим размер для лучшей видимости
+
+        FSlateDrawElement::MakeBox(
+            OutDrawElements,
+            LayerId + 2,
+            FPaintGeometry(
+                VertexPos - DebugPointSize * 0.5f,  // Центрируем точку
+                DebugPointSize,
+                1.0f
+            ),
+            FAppStyle::Get().GetBrush("WhiteBrush"),
+            ESlateDrawEffect::None,
+            FLinearColor::Red
+        );
+    }
 } 
