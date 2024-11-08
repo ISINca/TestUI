@@ -47,9 +47,7 @@ void SCustomRoundedBox::SetBrush(const FCustomRoundedBoxBrush& InBrush)
 
 void SCustomRoundedBox::DrawRoundedBox(FSlateWindowElementList& OutDrawElements, 
     const FGeometry& AllottedGeometry, int32 LayerId) const
-{
-    const FVector2D LocalSize = AllottedGeometry.GetLocalSize();
-    
+{    
     // Create box geometry
     FSlateDrawElement::MakeBox(
         OutDrawElements,
@@ -192,34 +190,28 @@ void SCustomRoundedBox::DrawCornerOutline(
     ECornerPosition CornerPosition) const
 {
     float Radius = 0.0f;
-    float BorderWidth = 0.0f;
 
     switch (CornerPosition)
     {
     case ECornerPosition::TopLeft:
         Radius = Brush.OutlineSettings.CornerRadii.X;
-        BorderWidth = Brush.GetTopBorderWidth();
         break;
     case ECornerPosition::TopRight:
         Radius = Brush.OutlineSettings.CornerRadii.Y;
-        BorderWidth = Brush.GetTopBorderWidth();
         break;
     case ECornerPosition::BottomRight:
         Radius = Brush.OutlineSettings.CornerRadii.Z;
-        BorderWidth = Brush.GetBottomBorderWidth();
         break;
     case ECornerPosition::BottomLeft:
         Radius = Brush.OutlineSettings.CornerRadii.W;
-        BorderWidth = Brush.GetBottomBorderWidth();
         break;
     }
     
-    if (Radius > 0 && BorderWidth > 0)
+    if (Radius > 0)
     {
         FRoundedCornerElement CornerElement(
             AllottedGeometry,
             Radius,
-            BorderWidth,
             Brush.OutlineColor,
             CornerPosition,
             Brush

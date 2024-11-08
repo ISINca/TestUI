@@ -5,7 +5,7 @@
 #include "UI/CustomRoundedBoxBrush.h"
 #include "UI/RoundedCornerElement.h"
 
-class TESTUI_API SCustomRoundedBox : public SCompoundWidget
+class SCustomRoundedBox : public SCompoundWidget
 {
 public:
     SLATE_BEGIN_ARGS(SCustomRoundedBox)

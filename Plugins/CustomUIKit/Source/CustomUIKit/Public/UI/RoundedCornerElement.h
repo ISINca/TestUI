@@ -19,7 +19,6 @@ public:
     FRoundedCornerElement(
         const FGeometry& InGeometry,
         float InCornerRadius,
-        float InBorderWidth,
         const FLinearColor& InOutlineColor,
         ECornerPosition InCornerPosition,
         const FCustomRoundedBoxBrush& InBrush
@@ -33,7 +32,6 @@ public:
 
 private:
     float CornerRadius;
-    float BorderWidth;
     FLinearColor OutlineColor;
     ECornerPosition CornerPosition;
     const FCustomRoundedBoxBrush& Brush;

@@ -6,7 +6,7 @@
 #include "CustomRoundedBoxWidget.generated.h"
 
 UCLASS()
-class TESTUI_API UCustomRoundedBoxWidget : public UContentWidget
+class UCustomRoundedBoxWidget : public UContentWidget
 {
     GENERATED_BODY()
 

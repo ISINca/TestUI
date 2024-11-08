@@ -6,12 +6,10 @@
 FRoundedCornerElement::FRoundedCornerElement(
     const FGeometry& InGeometry,
     float InCornerRadius,
-    float InBorderWidth,
     const FLinearColor& InOutlineColor,
     ECornerPosition InCornerPosition,
     const FCustomRoundedBoxBrush& InBrush)
     : CornerRadius(InCornerRadius)
-    , BorderWidth(InBorderWidth)
     , OutlineColor(InOutlineColor)
     , CornerPosition(InCornerPosition)
     , Brush(InBrush)
@@ -220,22 +218,22 @@ void FRoundedCornerElement::DrawRoundedCorner(
     );
 
     // Отрисока дебаг-точек для каждой вершины
-    for (int32 i = 0; i < Vertices.Num(); ++i)
-    {
-        const FVector2D VertexPos = FVector2D(Vertices[i].Position);
-        const FVector2D DebugPointSize(4.0f, 4.0f);  // Увеличим размер для лучшей видимости
-
-        FSlateDrawElement::MakeBox(
-            OutDrawElements,
-            LayerId + 2,
-            FPaintGeometry(
-                VertexPos - DebugPointSize * 0.5f,  // Центрируем точку
-                DebugPointSize,
-                1.0f
-            ),
-            FAppStyle::Get().GetBrush("WhiteBrush"),
-            ESlateDrawEffect::None,
-            FLinearColor::Red
-        );
-    }
+    // for (int32 i = 0; i < Vertices.Num(); ++i)
+    // {
+    //     const FVector2D VertexPos = FVector2D(Vertices[i].Position);
+    //     const FVector2D DebugPointSize(4.0f, 4.0f);  // Увеличим размер для лучшей видимости
+    //
+    //     FSlateDrawElement::MakeBox(
+    //         OutDrawElements,
+    //         LayerId + 2,
+    //         FPaintGeometry(
+    //             VertexPos - DebugPointSize * 0.5f,  // Центрируем точку
+    //             DebugPointSize,
+    //             1.0f
+    //         ),
+    //         FAppStyle::Get().GetBrush("WhiteBrush"),
+    //         ESlateDrawEffect::None,
+    //         FLinearColor::Red
+    //     );
+    // }
 } 
