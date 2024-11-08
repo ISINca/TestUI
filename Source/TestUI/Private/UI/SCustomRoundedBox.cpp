@@ -171,68 +171,61 @@ void SCustomRoundedBox::DrawOutline(FSlateWindowElementList& OutDrawElements,
         }
     }
 
-    // Отрисовка угловых элементов (по одному на каждый угол)
+    // Отрисовка угловых элементов
     // Верхний левый угол
-    DrawCornerOutline(OutDrawElements, AllottedGeometry, LayerId, ESide::Top, false);
+    DrawCornerOutline(OutDrawElements, AllottedGeometry, LayerId, ECornerPosition::TopLeft);
     
     // Верхний правый угол
-    DrawCornerOutline(OutDrawElements, AllottedGeometry, LayerId, ESide::Top, true);
+    DrawCornerOutline(OutDrawElements, AllottedGeometry, LayerId, ECornerPosition::TopRight);
     
     // Нижний правый угол
-    DrawCornerOutline(OutDrawElements, AllottedGeometry, LayerId, ESide::Bottom, true);
+    DrawCornerOutline(OutDrawElements, AllottedGeometry, LayerId, ECornerPosition::BottomRight);
     
     // Нижний левый угол
-    DrawCornerOutline(OutDrawElements, AllottedGeometry, LayerId, ESide::Bottom, false);
+    DrawCornerOutline(OutDrawElements, AllottedGeometry, LayerId, ECornerPosition::BottomLeft);
 }
 
 void SCustomRoundedBox::DrawCornerOutline(
     FSlateWindowElementList& OutDrawElements,
     const FGeometry& AllottedGeometry,
     int32 LayerId,
-    ESide Side,
-    bool bIsEndCorner) const
+    ECornerPosition CornerPosition) const
 {
     float Radius = 0.0f;
     float BorderWidth = 0.0f;
-    bool bIsRightCorner = false;
 
-    switch (Side)
+    switch (CornerPosition)
     {
-    case ESide::Top:
-        Radius = bIsEndCorner ? Brush.OutlineSettings.CornerRadii.Y : Brush.OutlineSettings.CornerRadii.X;
+    case ECornerPosition::TopLeft:
+        Radius = Brush.OutlineSettings.CornerRadii.X;
         BorderWidth = Brush.GetTopBorderWidth();
-        bIsRightCorner = bIsEndCorner;
         break;
-    case ESide::Right:
-        Radius = bIsEndCorner ? Brush.OutlineSettings.CornerRadii.Z : Brush.OutlineSettings.CornerRadii.Y;
-        BorderWidth = Brush.GetRightBorderWidth();
-        bIsRightCorner = bIsEndCorner;
+    case ECornerPosition::TopRight:
+        Radius = Brush.OutlineSettings.CornerRadii.Y;
+        BorderWidth = Brush.GetTopBorderWidth();
         break;
-    case ESide::Bottom:
-        Radius = bIsEndCorner ? Brush.OutlineSettings.CornerRadii.Z : Brush.OutlineSettings.CornerRadii.W;
+    case ECornerPosition::BottomRight:
+        Radius = Brush.OutlineSettings.CornerRadii.Z;
         BorderWidth = Brush.GetBottomBorderWidth();
-        bIsRightCorner = bIsEndCorner;
         break;
-    case ESide::Left:
-        Radius = bIsEndCorner ? Brush.OutlineSettings.CornerRadii.W : Brush.OutlineSettings.CornerRadii.X;
-        BorderWidth = Brush.GetLeftBorderWidth();
-        bIsRightCorner = bIsEndCorner;
+    case ECornerPosition::BottomLeft:
+        Radius = Brush.OutlineSettings.CornerRadii.W;
+        BorderWidth = Brush.GetBottomBorderWidth();
         break;
     }
     
     if (Radius > 0 && BorderWidth > 0)
     {
-        FRoundedCornerElement Corner(
+        FRoundedCornerElement CornerElement(
             AllottedGeometry,
             Radius,
             BorderWidth,
             Brush.OutlineColor,
-            bIsRightCorner,
-            Side,
+            CornerPosition,
             Brush
-        );
+           );
         
-        Corner.DrawRoundedCorner(
+        CornerElement.DrawRoundedCorner(
             AllottedGeometry,
             FSlateRect(FVector2D::ZeroVector, AllottedGeometry.GetLocalSize()),
             OutDrawElements,

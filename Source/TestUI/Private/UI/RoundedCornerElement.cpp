@@ -8,14 +8,12 @@ FRoundedCornerElement::FRoundedCornerElement(
     float InCornerRadius,
     float InBorderWidth,
     const FLinearColor& InOutlineColor,
-    bool bIsRightCorner,
-    ESide InSide,
+    ECornerPosition InCornerPosition,
     const FCustomRoundedBoxBrush& InBrush)
     : CornerRadius(InCornerRadius)
     , BorderWidth(InBorderWidth)
     , OutlineColor(InOutlineColor)
-    , bRightCorner(bIsRightCorner)
-    , Side(InSide)
+    , CornerPosition(InCornerPosition)
     , Brush(InBrush)
 {
 }
@@ -26,34 +24,35 @@ void FRoundedCornerElement::DrawRoundedCorner(
     FSlateWindowElementList& OutDrawElements,
     int32 LayerId) const
 {
-    // Определяем толщины граничащих граней
-    float HorizontalBorderWidth = 0.0f;
-    float VerticalBorderWidth = 0.0f;
+    const FVector2D LocalSize = AllottedGeometry.GetLocalSize();
+    
+    // Определяем параметры для каждого угла
+    FVector2D Center;
+    float StartAngle = 0.0f;
+    bool bReverseAngle = false;
 
-    switch (Side)
+    switch (CornerPosition)
     {
-    case ESide::Top:
-        HorizontalBorderWidth = Brush.GetTopBorderWidth();
-        VerticalBorderWidth = bRightCorner ? Brush.GetRightBorderWidth() : Brush.GetLeftBorderWidth();
+    case ECornerPosition::TopLeft:
+        Center = FVector2D(CornerRadius, CornerRadius);
+        StartAngle = -PI/2.0f;
+        bReverseAngle = false;
         break;
-    case ESide::Right:
-        HorizontalBorderWidth = bRightCorner ? Brush.GetBottomBorderWidth() : Brush.GetTopBorderWidth();
-        VerticalBorderWidth = Brush.GetRightBorderWidth();
+    case ECornerPosition::TopRight:
+        Center = FVector2D(LocalSize.X - CornerRadius, CornerRadius);
+        StartAngle = -PI/2.0f;
+        bReverseAngle = true;
         break;
-    case ESide::Bottom:
-        HorizontalBorderWidth = Brush.GetBottomBorderWidth();
-        VerticalBorderWidth = bRightCorner ? Brush.GetRightBorderWidth() : Brush.GetLeftBorderWidth();
+    case ECornerPosition::BottomRight:
+        Center = FVector2D(LocalSize.X - CornerRadius, LocalSize.Y - CornerRadius);
+        StartAngle = 0.0f;
+        bReverseAngle = true;
         break;
-    case ESide::Left:
-        HorizontalBorderWidth = bRightCorner ? Brush.GetBottomBorderWidth() : Brush.GetTopBorderWidth();
-        VerticalBorderWidth = Brush.GetLeftBorderWidth();
+    case ECornerPosition::BottomLeft:
+        Center = FVector2D(CornerRadius, LocalSize.Y - CornerRadius);
+        StartAngle = PI;
+        bReverseAngle = false;
         break;
-    }
-
-    // Пропускаем отрисовку, если обе граничащие грани имеют нулевую толщину
-    if (HorizontalBorderWidth == 0.0f && VerticalBorderWidth == 0.0f)
-    {
-        return;
     }
 
     const int32 NumSegments = 16;
@@ -61,38 +60,24 @@ void FRoundedCornerElement::DrawRoundedCorner(
     
     TArray<FSlateVertex> Vertices;
     TArray<SlateIndex> Indices;
-    
-    const FVector2D LocalSize = AllottedGeometry.GetLocalSize();
-    
-    // Определяем позиции и углы для каждого угла
-    FVector2D Center;
-    float StartAngle = 0.0f;
 
-    switch (Side)
+    // Получаем толщины граничащих граней
+    float HorizontalBorderWidth = 0.0f;
+    float VerticalBorderWidth = 0.0f;
+
+    switch (CornerPosition)
     {
-    case ESide::Top:
-        Center = bRightCorner ? 
-            FVector2D(LocalSize.X - CornerRadius, CornerRadius) : 
-            FVector2D(CornerRadius, CornerRadius);
-        StartAngle = -PI/2.0f;
+    case ECornerPosition::TopLeft:
+    case ECornerPosition::TopRight:
+        HorizontalBorderWidth = Brush.GetTopBorderWidth();
+        VerticalBorderWidth = CornerPosition == ECornerPosition::TopLeft ? 
+            Brush.GetLeftBorderWidth() : Brush.GetRightBorderWidth();
         break;
-    case ESide::Right:
-        Center = bRightCorner ? 
-            FVector2D(LocalSize.X - CornerRadius, LocalSize.Y - CornerRadius) : 
-            FVector2D(LocalSize.X - CornerRadius, CornerRadius);
-        StartAngle = bRightCorner ? 0.0f : 0.0f;
-        break;
-    case ESide::Bottom:
-        Center = bRightCorner ? 
-            FVector2D(LocalSize.X - CornerRadius, LocalSize.Y - CornerRadius) : 
-            FVector2D(CornerRadius, LocalSize.Y - CornerRadius);
-        StartAngle = bRightCorner ? 0.0f : PI;
-        break;
-    case ESide::Left:
-        Center = bRightCorner ? 
-            FVector2D(CornerRadius, LocalSize.Y - CornerRadius) : 
-            FVector2D(CornerRadius, CornerRadius);
-        StartAngle = bRightCorner ? PI/2.0f : -PI/2.0f;
+    case ECornerPosition::BottomLeft:
+    case ECornerPosition::BottomRight:
+        HorizontalBorderWidth = Brush.GetBottomBorderWidth();
+        VerticalBorderWidth = CornerPosition == ECornerPosition::BottomLeft ? 
+            Brush.GetLeftBorderWidth() : Brush.GetRightBorderWidth();
         break;
     }
 
@@ -102,7 +87,7 @@ void FRoundedCornerElement::DrawRoundedCorner(
     // Создаем вершины
     for (int32 i = 0; i <= NumSegments; ++i)
     {
-        float Angle = StartAngle + (bRightCorner ? i : -i) * AngleStep;
+        float Angle = StartAngle + (bReverseAngle ? i : -i) * AngleStep;
         
         const float CosAngle = FMath::Cos(Angle);
         const float SinAngle = FMath::Sin(Angle);
@@ -116,42 +101,37 @@ void FRoundedCornerElement::DrawRoundedCorner(
         // Если нужно, корректируем только одну координату
         if (VerticalBorderWidth > CornerRadius && (i == 0 || i == NumSegments))
         {
-            switch (Side)
+            const bool bIsRight = CornerPosition == ECornerPosition::TopRight || 
+                                CornerPosition == ECornerPosition::BottomRight;
+            const bool bIsBottom = CornerPosition == ECornerPosition::BottomLeft || 
+                                 CornerPosition == ECornerPosition::BottomRight;
+
+            if ((bIsBottom && i == NumSegments) || (!bIsBottom && i == 0))
             {
-            case ESide::Left:
-                if (i == 0)
-                    OuterPos.X = VerticalBorderWidth;
-                break;
-            case ESide::Right:
-                if (i == NumSegments)
-                    OuterPos.X = LocalSize.X - VerticalBorderWidth;
-                break;
-            case ESide::Top:
-                if ((bRightCorner && i == 0) || (!bRightCorner && i == 0)) // Для верха оставляем как было
-                    OuterPos.X = bRightCorner ? LocalSize.X - VerticalBorderWidth : VerticalBorderWidth;
-                break;
-            case ESide::Bottom:
-                if ((bRightCorner && i == NumSegments) || (!bRightCorner && i == NumSegments)) // Для низа меняем на последнюю вершину
-                    OuterPos.X = bRightCorner ? LocalSize.X - VerticalBorderWidth : VerticalBorderWidth;
-                break;
+                OuterPos.X = bIsRight ? 
+                    LocalSize.X - VerticalBorderWidth : 
+                    VerticalBorderWidth;
             }
         }
         else if (HorizontalBorderWidth > CornerRadius && (i == 0 || i == NumSegments))
         {
-            switch (Side)
+            switch (CornerPosition)
             {
-            case ESide::Top:
-                if (i == NumSegments) // Меняем на последнюю вершину
+            case ECornerPosition::TopLeft:
+                if (i == NumSegments)
                     OuterPos.Y = HorizontalBorderWidth;
                 break;
-            case ESide::Bottom:
-                if (i == 0) // Меняем на первую вершину
+            case ECornerPosition::TopRight:
+                if (i == NumSegments)
+                    OuterPos.Y = HorizontalBorderWidth;
+                break;
+            case ECornerPosition::BottomRight:
+                if (i == 0)
                     OuterPos.Y = LocalSize.Y - HorizontalBorderWidth;
                 break;
-            case ESide::Left:
-            case ESide::Right:
-                if ((bRightCorner && i == 0) || (!bRightCorner && i == NumSegments))
-                    OuterPos.Y = bRightCorner ? LocalSize.Y - HorizontalBorderWidth : HorizontalBorderWidth;
+            case ECornerPosition::BottomLeft:
+                if (i == 0)
+                    OuterPos.Y = LocalSize.Y - HorizontalBorderWidth;
                 break;
             }
         }
@@ -163,39 +143,23 @@ void FRoundedCornerElement::DrawRoundedCorner(
         FVector2D InnerPos;
         if (VerticalBorderWidth > CornerRadius)
         {
-            float XOffset = InnerRadiusX;
-            switch (Side)
-            {
-            case ESide::Left:
-                XOffset = -InnerRadiusX;
-                break;
-            case ESide::Right:
-                XOffset = InnerRadiusX;
-                break;
-            case ESide::Top:
-            case ESide::Bottom:
-                XOffset = bRightCorner ? InnerRadiusX : -InnerRadiusX;
-                break;
-            }
-            InnerPos = FVector2D(Center.X + XOffset, Center.Y);
+            const bool bIsRight = CornerPosition == ECornerPosition::TopRight || 
+                                CornerPosition == ECornerPosition::BottomRight;
+            
+            InnerPos = FVector2D(
+                Center.X + (bIsRight ? InnerRadiusX : -InnerRadiusX),
+                Center.Y
+            );
         }
         else if (HorizontalBorderWidth > CornerRadius)
         {
-            float YOffset = InnerRadiusY;
-            switch (Side)
-            {
-            case ESide::Top:
-                YOffset = -InnerRadiusY;
-                break;
-            case ESide::Bottom:
-                YOffset = InnerRadiusY;
-                break;
-            case ESide::Left:
-            case ESide::Right:
-                YOffset = bRightCorner ? InnerRadiusY : -InnerRadiusY;
-                break;
-            }
-            InnerPos = FVector2D(Center.X, Center.Y + YOffset);
+            const bool bIsBottom = CornerPosition == ECornerPosition::BottomLeft || 
+                                 CornerPosition == ECornerPosition::BottomRight;
+            
+            InnerPos = FVector2D(
+                Center.X,
+                Center.Y + (bIsBottom ? InnerRadiusY : -InnerRadiusY)
+            );
         }
         else
         {
@@ -255,7 +219,7 @@ void FRoundedCornerElement::DrawRoundedCorner(
         ESlateDrawEffect::None
     );
 
-    // Отрисовка дебаг-точек для каждой вершины
+    // Отрисока дебаг-точек для каждой вершины
     for (int32 i = 0; i < Vertices.Num(); ++i)
     {
         const FVector2D VertexPos = FVector2D(Vertices[i].Position);

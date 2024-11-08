@@ -5,12 +5,12 @@
 #include "Framework/Application/SlateApplication.h"
 #include "UI/CustomRoundedBoxBrush.h"
 
-enum class ESide
+enum class ECornerPosition
 {
-    Top,
-    Right,
-    Bottom,
-    Left
+    TopLeft,
+    TopRight,
+    BottomRight,
+    BottomLeft
 };
 
 class FRoundedCornerElement
@@ -21,8 +21,7 @@ public:
         float InCornerRadius,
         float InBorderWidth,
         const FLinearColor& InOutlineColor,
-        bool bIsRightCorner,
-        ESide InSide,
+        ECornerPosition InCornerPosition,
         const FCustomRoundedBoxBrush& InBrush
     );
 
@@ -36,7 +35,6 @@ private:
     float CornerRadius;
     float BorderWidth;
     FLinearColor OutlineColor;
-    bool bRightCorner;
-    ESide Side;
+    ECornerPosition CornerPosition;
     const FCustomRoundedBoxBrush& Brush;
 }; 
